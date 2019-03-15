@@ -10,6 +10,7 @@ import torchvision.transforms as transforms
 from torchvision.models.inception import inception_v3
 
 import numpy as np
+import os
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from scipy.stats import entropy
 
@@ -61,10 +62,12 @@ def inception_score(data_path, gpu='', batch_size=32, resize=True, splits=10):
     # Load inception model
     inception_model = inception_v3(pretrained=True, transform_input=False).type(dtype)
     inception_model.eval();
-    up = nn.Upsample(size=(299, 299), mode='bilinear').type(dtype)
     def get_pred(x):
         if resize:
-            x = up(x)
+            x = F.interpolate(x,
+                              size=(299, 299),
+                              mode='bilinear',
+                              align_corners=False)
         x = inception_model(x)
         return F.softmax(x, dim=1).data.cpu().numpy()
 

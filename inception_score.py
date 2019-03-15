@@ -8,7 +8,18 @@ import tqdm
 from torchvision.models.inception import inception_v3
 
 import numpy as np
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from scipy.stats import entropy
+
+
+parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
+parser.add_argument('path', type=str,
+                    help=('Path to the generated images'))
+parser.add_argument('--batch-size', type=int, default=32,
+                    help='Batch size to use')
+parser.add_argument('-c', '--gpu', default='', type=str,
+                    help='GPU to use (leave blank for CPU only)')
+
 
 def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
     """Computes the inception score of the generated images imgs
@@ -72,35 +83,18 @@ def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
 
 if __name__ == '__main__':
 
+    args = parser.parse_args()
+
+    cuda = False if args.gpu == '' else True
+    os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+
     import torchvision.datasets as dset
     import torchvision.transforms as transforms
 
-    im_dset = dset.ImageFolder(root='/home/voletiv/Downloads/ICASSP/faces', transform=transforms.Compose([
+    im_dset = dset.ImageFolder(root=args.path, transform=transforms.Compose([
                                  transforms.ToTensor(),
                                  transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
                     )
 
-    print (inception_score(im_dset, cuda=False, batch_size=32, resize=True, splits=10))
 
-    # class IgnoreLabelDataset(torch.utils.data.Dataset):
-    #     def __init__(self, orig):
-    #         self.orig = orig
-
-    #     def __getitem__(self, index):
-    #         return self.orig[index][0]
-
-    #     def __len__(self):
-    #         return len(self.orig)
-
-    # cifar = dset.CIFAR10(root='data/', download=True,
-    #                          transform=transforms.Compose([
-    #                              transforms.Scale(32),
-    #                              transforms.ToTensor(),
-    #                              transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    #                          ])
-    # )
-
-    # IgnoreLabelDataset(cifar)
-
-    # print ("Calculating Inception Score...")
-    # print (inception_score(IgnoreLabelDataset(cifar), cuda=True, batch_size=32, resize=True, splits=10))
+    print (inception_score(im_dset, cuda=cuda, batch_size=args.batch_size, resize=True, splits=10))

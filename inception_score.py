@@ -69,7 +69,7 @@ def inception_score(data_path, gpu='', batch_size=32, resize=True, splits=10):
                               mode='bilinear',
                               align_corners=False)
         x = inception_model(x)
-        return F.softmax(x, dim=1).data.cpu().numpy()
+        return F.softmax(x, dim=1).detach().cpu().numpy()
 
     # Get predictions
     preds = np.zeros((N, 1000))

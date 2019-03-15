@@ -5,6 +5,8 @@ from torch.nn import functional as F
 import torch.utils.data
 import tqdm
 
+import torchvision.datasets as dset
+import torchvision.transforms as transforms
 from torchvision.models.inception import inception_v3
 
 import numpy as np
@@ -21,14 +23,25 @@ parser.add_argument('-c', '--gpu', default='', type=str,
                     help='GPU to use (leave blank for CPU only)')
 
 
-def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
+def inception_score(data_path, gpu='', batch_size=32, resize=True, splits=10):
     """Computes the inception score of the generated images imgs
 
+    data_path -- path to folder with images in class_dirs
+    gpu -- id of GPU to be used (e.g. 0)
     imgs -- Torch dataset of (3xHxW) numpy images normalized in the range [-1, 1]
     cuda -- whether or not to run on GPU
     batch_size -- batch size for feeding into Inception v3
     splits -- number of splits
     """
+
+    cuda = False if gpu == '' else True
+    if cuda:
+        os.environ['CUDA_VISIBLE_DEVICES'] = gpu
+
+    imgs = dset.ImageFolder(root=data_path, transform=transforms.Compose([
+                                                      transforms.ToTensor(),
+                                                      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]))
+
     N = len(imgs)
 
     assert batch_size > 0
@@ -85,16 +98,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    cuda = False if args.gpu == '' else True
-    os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+    print(inception_score(args.path, gpu=args.gpu, batch_size=args.batch_size, resize=True, splits=10))
 
-    import torchvision.datasets as dset
-    import torchvision.transforms as transforms
-
-    im_dset = dset.ImageFolder(root=args.path, transform=transforms.Compose([
-                                 transforms.ToTensor(),
-                                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-                    )
-
-
-    print (inception_score(im_dset, cuda=cuda, batch_size=args.batch_size, resize=True, splits=10))
+# python inception_score.py /path/to/dir/of/images --gpu 0
